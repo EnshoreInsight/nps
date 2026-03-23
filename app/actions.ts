@@ -551,7 +551,7 @@ export async function submitFeedback(formData: FormData) {
     : `${process.env.APP_BASE_URL}/pm/tracker`;
 
   try {
-    await sendFeedbackNotification({
+    const notificationResult = await sendFeedbackNotification({
       recipientRules: project.emailRecipients,
       responseId: submission.id,
       urgencyLevel,
@@ -571,6 +571,22 @@ export async function submitFeedback(formData: FormData) {
       slaDue: submission.slaDueAt,
       trackerLink,
     });
+
+    if (!notificationResult.sent) {
+      console.warn("Feedback notification not sent", {
+        responseId: submission.id,
+        projectId: project.id,
+        urgencyLevel,
+        reason: notificationResult.reason,
+      });
+    } else {
+      console.log("Feedback notification sent", {
+        responseId: submission.id,
+        projectId: project.id,
+        urgencyLevel,
+        recipients: notificationResult.recipients,
+      });
+    }
   } catch (error) {
     console.error("Failed to send feedback notification", error);
   }
