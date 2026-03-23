@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { APP_NAME } from "@/lib/constants";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: APP_NAME,
   description: "Enshore Insight customer feedback and action management platform.",
