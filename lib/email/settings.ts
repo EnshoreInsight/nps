@@ -17,12 +17,18 @@ export function getEmailSettingsDefaults() {
 }
 
 export async function getEmailSettings() {
-  const settings = await prisma.emailSettings.findUnique({
-    where: { key: "global" },
-  });
+  try {
+    const settings = await prisma.emailSettings.findUnique({
+      where: { key: "global" },
+    });
 
-  return {
-    ...getEmailSettingsDefaults(),
-    ...settings,
-  };
+    return {
+      ...getEmailSettingsDefaults(),
+      ...settings,
+    };
+  } catch (error) {
+    console.error("Falling back to default email settings", error);
+
+    return getEmailSettingsDefaults();
+  }
 }
