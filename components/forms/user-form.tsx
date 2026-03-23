@@ -3,6 +3,7 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { Role } from "@prisma/client";
 import { createUser, updateUser } from "@/app/actions";
+import { DEFAULT_NEW_USER_PASSWORD } from "@/lib/constants";
 import { CORE_USER_EMAIL } from "@/lib/core-user";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,9 +66,16 @@ export function UserForm({
             <Input
               name="password"
               type="password"
-              placeholder={isEdit ? "Leave blank to keep current password" : "Temporary password"}
+              defaultValue={isEdit ? undefined : DEFAULT_NEW_USER_PASSWORD}
+              placeholder={isEdit ? "Leave blank to keep current password" : DEFAULT_NEW_USER_PASSWORD}
               required={!isEdit}
+              readOnly={!isEdit}
             />
+            {!isEdit ? (
+              <p className="text-sm text-muted-foreground">
+                New users start with the default password <span className="font-medium text-foreground">{DEFAULT_NEW_USER_PASSWORD}</span> and can change it from the Account page after signing in.
+              </p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Role</label>

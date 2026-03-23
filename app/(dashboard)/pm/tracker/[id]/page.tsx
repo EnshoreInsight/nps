@@ -14,6 +14,7 @@ export default async function TrackerActionPage({
   searchParams?: { saved?: string };
 }) {
   const session = await requireRole(["ADMIN", "PROJECT_REPRESENTATIVE", "VIEWER"]);
+  const canEdit = session.user.role !== "VIEWER";
 
   const action = await prisma.feedbackAction.findUnique({
     where: { id: params.id },
@@ -42,14 +43,14 @@ export default async function TrackerActionPage({
     <div className="space-y-8">
       <PageHeader
         title={`${action.feedbackSubmission.project.name} action`}
-        description="Update this action and review the full response log."
+        description={canEdit ? "Update this action and review the full response log." : "Review this action and its full response log."}
         actions={
           <Button asChild variant="outline">
             <Link href="/pm/tracker">Back to tracker</Link>
           </Button>
         }
       />
-      <ActionDetail action={action} saved={searchParams?.saved === "1"} />
+      <ActionDetail action={action} saved={searchParams?.saved === "1"} canEdit={canEdit} />
     </div>
   );
 }

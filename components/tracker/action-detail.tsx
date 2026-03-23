@@ -43,7 +43,7 @@ type ActionDetailProps = {
   };
 };
 
-export function ActionDetail({ action, saved = false }: ActionDetailProps & { saved?: boolean }) {
+export function ActionDetail({ action, saved = false, canEdit = true }: ActionDetailProps & { saved?: boolean; canEdit?: boolean }) {
   const now = new Date();
   const maxContactedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const formatUkDate = (value: Date | string) => new Date(value).toLocaleDateString("en-GB");
@@ -192,34 +192,36 @@ export function ActionDetail({ action, saved = false }: ActionDetailProps & { sa
             <p className="mt-2 text-muted-foreground">{action.feedbackSubmission.comment || "No comment supplied."}</p>
           </div>
 
-          <form action={updateAction} className="grid gap-4 lg:grid-cols-4">
-            <input type="hidden" name="actionId" value={action.id} />
-            <input type="hidden" name="returnPath" value={`/pm/tracker/${action.id}`} />
-            <select name="status" defaultValue={action.status} className="h-11 rounded-2xl border border-input bg-white px-4 text-sm">
-              <option value="OPEN">OPEN</option>
-              <option value="IN_PROGRESS">IN_PROGRESS</option>
-              <option value="CLOSED">CLOSED</option>
-            </select>
-            <select name="contacted" defaultValue={String(action.contacted)} className="h-11 rounded-2xl border border-input bg-white px-4 text-sm">
-              <option value="false">Contacted: No</option>
-              <option value="true">Contacted: Yes</option>
-            </select>
-            <Input
-              name="contactedAt"
-              type="date"
-              defaultValue=""
-              max={maxContactedAt}
-            />
-            <Button type="submit">Save update</Button>
-            <div className="lg:col-span-4">
-              <Textarea
-                name="ownerNotes"
+          {canEdit ? (
+            <form action={updateAction} className="grid gap-4 lg:grid-cols-4">
+              <input type="hidden" name="actionId" value={action.id} />
+              <input type="hidden" name="returnPath" value={`/pm/tracker/${action.id}`} />
+              <select name="status" defaultValue={action.status} className="h-11 rounded-2xl border border-input bg-white px-4 text-sm">
+                <option value="OPEN">OPEN</option>
+                <option value="IN_PROGRESS">IN_PROGRESS</option>
+                <option value="CLOSED">CLOSED</option>
+              </select>
+              <select name="contacted" defaultValue={String(action.contacted)} className="h-11 rounded-2xl border border-input bg-white px-4 text-sm">
+                <option value="false">Contacted: No</option>
+                <option value="true">Contacted: Yes</option>
+              </select>
+              <Input
+                name="contactedAt"
+                type="date"
                 defaultValue=""
-                placeholder="Action description"
-                className="min-h-[96px]"
+                max={maxContactedAt}
               />
-            </div>
-          </form>
+              <Button type="submit">Save update</Button>
+              <div className="lg:col-span-4">
+                <Textarea
+                  name="ownerNotes"
+                  defaultValue=""
+                  placeholder="Action description"
+                  className="min-h-[96px]"
+                />
+              </div>
+            </form>
+          ) : null}
         </CardContent>
       </Card>
 

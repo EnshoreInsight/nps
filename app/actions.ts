@@ -1,12 +1,13 @@
 "use server";
 
-import { hash } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ContactPreference, FeedbackActionStatus, Role } from "@prisma/client";
 import { AuthError } from "next-auth";
 import { signIn } from "@/lib/auth";
 import { ensureProjectAccess, requireRole } from "@/lib/authz";
+import { DEFAULT_NEW_USER_PASSWORD } from "@/lib/constants";
 import { calculateSlaDueAt, calculateUrgencyLevel } from "@/lib/domain/feedback";
 import { sendFeedbackNotification } from "@/lib/email/send";
 import { getEmailSettings } from "@/lib/email/settings";
@@ -14,6 +15,7 @@ import { CORE_USER_EMAIL, CORE_USER_NAME, isCoreUserEmail } from "@/lib/core-use
 import { prisma } from "@/lib/prisma";
 import { parseOptionText } from "@/lib/project-options";
 import {
+  changePasswordSchema,
   emailSettingsSchema,
   feedbackSchema,
   projectSchema,
@@ -280,6 +282,59 @@ export async function createUser(_: FormActionState | undefined, formData: FormD
         error,
         "We could not create the user. Please review the form and try again.",
       ),
+    };
+  }
+}
+
+export async function changeOwnPassword(_: FormActionState | undefined, formData: FormData) {
+  const session = await requireRole(["ADMIN", "PROJECT_REPRESENTATIVE", "VIEWER"]);
+
+  try {
+    const parsed = changePasswordSchema.safeParse({
+      currentPassword: formData.get("currentPassword"),
+      newPassword: formData.get("newPassword"),
+      confirmPassword: formData.get("confirmPassword"),
+    });
+
+    if (!parsed.success) {
+      return {
+        error: parsed.error.issues[0]?.message ?? "Please complete all password fields correctly.",
+      };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        passwordHash: true,
+      },
+    });
+
+    if (!user) {
+      return {
+        error: "We could not find your account. Please sign in again and retry.",
+      };
+    }
+
+    const passwordMatches = await compare(parsed.data.currentPassword, user.passwordHash);
+
+    if (!passwordMatches) {
+      return {
+        error: "Your current password is incorrect.",
+      };
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: await hash(parsed.data.newPassword, 10),
+      },
+    });
+
+    redirect("/account?saved=1");
+  } catch (error) {
+    return {
+      error: getValidationMessage(error, "We could not change your password. Please try again."),
     };
   }
 }
@@ -660,7 +715,7 @@ export async function submitFeedback(formData: FormData) {
 }
 
 export async function updateAction(formData: FormData) {
-  const session = await requireRole(["ADMIN", "PROJECT_REPRESENTATIVE", "VIEWER"]);
+  const session = await requireRole(["ADMIN", "PROJECT_REPRESENTATIVE"]);
   const returnPath = String(formData.get("returnPath") || `/pm/tracker/${String(formData.get("actionId"))}`);
 
   const parsed = trackerUpdateSchema.safeParse({

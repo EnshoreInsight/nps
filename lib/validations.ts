@@ -51,6 +51,21 @@ export const userUpdateSchema = z.object({
   addToAllProjects: z.enum(["YES", "NO"]).optional().default("NO"),
 });
 
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(8),
+    newPassword: z.string().min(8),
+    confirmPassword: z.string().min(8),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "New password and confirmation must match.",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: "Choose a new password that is different from your current password.",
+    path: ["newPassword"],
+  });
+
 export const feedbackSchema = z.object({
   projectId: z.string().cuid(),
   client: z.string().trim().min(2),
