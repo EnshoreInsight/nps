@@ -142,17 +142,25 @@ export function ProjectsTable({
                   ) : (
                     <form
                       action={toggleProjectWeeklyExport}
-                      className="flex flex-col items-start gap-2"
+                      className="flex items-center gap-3"
                       onClick={(event) => event.stopPropagation()}
                     >
                       <input type="hidden" name="projectId" value={project.id} />
                       <input type="hidden" name="enabled" value={String(!project.weeklyExportEnabled)} />
-                      <span className="text-sm font-medium">
-                        {project.weeklyExportEnabled ? "On" : "Off"}
-                      </span>
-                      <Button type="submit" variant="outline" size="sm">
-                        Turn {project.weeklyExportEnabled ? "off" : "on"}
-                      </Button>
+                      <button
+                        type="submit"
+                        aria-label={`Turn weekly export ${project.weeklyExportEnabled ? "off" : "on"} for ${project.name}`}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          project.weeklyExportEnabled ? "bg-primary" : "bg-slate-300"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
+                            project.weeklyExportEnabled ? "translate-x-5" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                      <span className="text-sm font-medium">{project.weeklyExportEnabled ? "On" : "Off"}</span>
                     </form>
                   )}
                 </TableCell>
