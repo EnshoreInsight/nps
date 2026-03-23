@@ -3,6 +3,9 @@ import { PageHeader } from "@/components/shared/page-header";
 import { requireRole } from "@/lib/authz";
 import { getEmailSettings } from "@/lib/email/settings";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function AdminEmailPage({
   searchParams,
 }: {
