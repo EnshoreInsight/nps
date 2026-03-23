@@ -27,7 +27,7 @@ export function PublicFeedbackForm({
   return (
     <form
       action={action}
-      className="space-y-10"
+      className="relative space-y-10"
       onSubmitCapture={() => {
         setIsSubmitting(true);
       }}
@@ -35,7 +35,7 @@ export function PublicFeedbackForm({
       <input type="hidden" name="projectId" value={projectId} />
 
       {isSubmitting ? (
-        <div className="rounded-[1.75rem] border border-sky-200 bg-sky-50 px-6 py-16 text-center">
+        <div className="absolute inset-0 z-10 rounded-[1.75rem] border border-sky-200 bg-sky-50/95 px-6 py-16 text-center shadow-lg backdrop-blur-sm">
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-700">Submitting</p>
           <h2 className="mt-4 text-3xl font-semibold text-slate-800">Submitting your feedback...</h2>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600">
@@ -43,8 +43,9 @@ export function PublicFeedbackForm({
             when email delivery is slow.
           </p>
         </div>
-      ) : (
-        <>
+      ) : null}
+
+      <div className={isSubmitting ? "pointer-events-none opacity-20" : undefined}>
           <div className="space-y-4 rounded-[1.75rem] border border-slate-200 bg-slate-50/75 p-6">
             <label className="block text-xl font-semibold leading-8 text-slate-800 md:text-2xl">
               1. Please confirm the client you&apos;re providing feedback on behalf of:{" "}
@@ -169,8 +170,7 @@ export function PublicFeedbackForm({
             </p>
             <FeedbackSubmitButton />
           </div>
-        </>
-      )}
+      </div>
     </form>
   );
 }
