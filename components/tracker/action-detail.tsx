@@ -46,6 +46,7 @@ type ActionDetailProps = {
 export function ActionDetail({ action, saved = false }: ActionDetailProps & { saved?: boolean }) {
   const now = new Date();
   const maxContactedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const formatUkDate = (value: Date | string) => new Date(value).toLocaleDateString("en-GB");
   const updateRows = action.auditEntries.map((entry) => {
     if (entry.field === "notification" && entry.toValue) {
       try {
@@ -64,7 +65,7 @@ export function ActionDetail({ action, saved = false }: ActionDetailProps & { sa
 
         return {
           id: entry.id,
-          date: new Date(entry.createdAt).toLocaleDateString(),
+          date: formatUkDate(entry.createdAt),
           status: action.status,
           contacted: action.contacted ? "Yes" : "No",
           description,
@@ -73,7 +74,7 @@ export function ActionDetail({ action, saved = false }: ActionDetailProps & { sa
       } catch {
         return {
           id: entry.id,
-          date: new Date(entry.createdAt).toLocaleDateString(),
+          date: formatUkDate(entry.createdAt),
           status: action.status,
           contacted: action.contacted ? "Yes" : "No",
           description: entry.toValue || "-",
@@ -93,7 +94,7 @@ export function ActionDetail({ action, saved = false }: ActionDetailProps & { sa
 
         return {
           id: entry.id,
-          date: payload.contactedAt ? new Date(payload.contactedAt).toLocaleDateString() : new Date(entry.createdAt).toLocaleDateString(),
+          date: payload.contactedAt ? formatUkDate(payload.contactedAt) : formatUkDate(entry.createdAt),
           status: payload.status ?? "-",
           contacted: payload.contacted ? "Yes" : "No",
           description: payload.description?.trim() ? payload.description : "-",
@@ -102,7 +103,7 @@ export function ActionDetail({ action, saved = false }: ActionDetailProps & { sa
       } catch {
         return {
           id: entry.id,
-          date: new Date(entry.createdAt).toLocaleDateString(),
+          date: formatUkDate(entry.createdAt),
           status: action.status,
           contacted: action.contacted ? "Yes" : "No",
           description: entry.toValue || "-",
@@ -113,7 +114,7 @@ export function ActionDetail({ action, saved = false }: ActionDetailProps & { sa
 
     return {
       id: entry.id,
-      date: new Date(entry.createdAt).toLocaleDateString(),
+      date: formatUkDate(entry.createdAt),
       status: entry.field === "status" ? entry.toValue || action.status : action.status,
       contacted:
         entry.field === "contacted"

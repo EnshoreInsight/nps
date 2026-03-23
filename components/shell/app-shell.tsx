@@ -42,7 +42,9 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </aside>
-        <main>{children}</main>
+        <main className="rounded-[2rem] border border-white/60 bg-white/88 p-6 shadow-[0_24px_60px_rgba(10,53,70,0.14)] backdrop-blur-sm">
+          {children}
+        </main>
       </div>
       </div>
     </div>
