@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { APP_NAME, NAV_ITEMS } from "@/lib/constants";
-import { Button } from "@/components/ui/button";
+import { SignOutButton } from "@/components/shell/sign-out-button";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -26,16 +26,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-3">
             <span className="rounded-full bg-secondary px-3 py-1 text-sm">{session?.user?.name}</span>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/sign-in" });
-              }}
-            >
-              <Button variant="outline" type="submit">
-                Sign out
-              </Button>
-            </form>
+            <SignOutButton />
           </div>
         </div>
       </header>
