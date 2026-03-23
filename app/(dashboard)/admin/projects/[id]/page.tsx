@@ -48,9 +48,14 @@ export default async function EditProjectPage({
         title={`Edit ${project.name}`}
         description="Update project details, public form wording, and project-specific option sets."
         actions={
-          <Button asChild variant="outline">
-            <Link href="/admin/projects">Back to projects</Link>
-          </Button>
+          <div className="flex gap-3">
+            <Button asChild variant="outline">
+              <Link href={`/api/admin/projects/${project.id}/feedback-export`}>Download full feedback export</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/admin/projects">Back to projects</Link>
+            </Button>
+          </div>
         }
       />
       {searchParams?.saved === "1" ? (

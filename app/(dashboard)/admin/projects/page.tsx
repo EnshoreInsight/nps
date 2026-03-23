@@ -43,6 +43,7 @@ export default async function AdminProjectsPage() {
           client: project.client,
           slug: project.slug,
           isActive: project.isActive,
+          weeklyExportEnabled: project.weeklyExportEnabled,
           isArchived: project.isArchived,
           archivedAt: project.archivedAt?.toISOString() ?? null,
           assignments: project.emailRecipients

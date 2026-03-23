@@ -12,6 +12,8 @@ import { calculateSlaDueAt, calculateUrgencyLevel } from "@/lib/domain/feedback"
 import { sendFeedbackNotification } from "@/lib/email/send";
 import { getEmailSettings } from "@/lib/email/settings";
 import { CORE_USER_EMAIL, CORE_USER_NAME, isCoreUserEmail } from "@/lib/core-user";
+import { buildFeedbackExportCsv } from "@/lib/exports/feedback-export";
+import { sendWeeklyFeedbackExportEmail } from "@/lib/email/weekly-export";
 import { prisma } from "@/lib/prisma";
 import { parseOptionText } from "@/lib/project-options";
 import {
@@ -115,6 +117,7 @@ export async function createProject(_: FormActionState | undefined, formData: Fo
       name: formData.get("name"),
       slug: formData.get("slug"),
       client: formData.get("client"),
+      weeklyExportEnabled: formData.get("weeklyExportEnabled") === "true",
       description: formData.get("description"),
       feedbackIntro: formData.get("feedbackIntro"),
       thankYouMessage: formData.get("thankYouMessage"),
@@ -145,6 +148,7 @@ export async function createProject(_: FormActionState | undefined, formData: Fo
     await prisma.project.create({
       data: {
         ...parsed.data,
+        weeklyExportEnabled: parsed.data.weeklyExportEnabled,
         packageOptions: parseOptionText(parsed.data.packageOptions),
         categoryOptions: parseOptionText(parsed.data.categoryOptions),
       },
@@ -172,6 +176,7 @@ export async function updateProject(_: FormActionState | undefined, formData: Fo
       projectId: formData.get("projectId"),
       slug: formData.get("slug"),
       client: formData.get("client"),
+      weeklyExportEnabled: formData.get("weeklyExportEnabled") === "true",
       description: formData.get("description"),
       feedbackIntro: formData.get("feedbackIntro"),
       thankYouMessage: formData.get("thankYouMessage"),
@@ -206,6 +211,7 @@ export async function updateProject(_: FormActionState | undefined, formData: Fo
       data: {
         slug: parsed.data.slug,
         client: parsed.data.client,
+        weeklyExportEnabled: parsed.data.weeklyExportEnabled,
         description: parsed.data.description,
         feedbackIntro: parsed.data.feedbackIntro,
         thankYouMessage: parsed.data.thankYouMessage,
@@ -232,10 +238,11 @@ export async function createUser(_: FormActionState | undefined, formData: FormD
   await requireRole(["ADMIN"]);
 
   try {
+    const password = String(formData.get("password") || DEFAULT_NEW_USER_PASSWORD);
     const parsed = userSchema.safeParse({
       name: formData.get("name"),
       email: formData.get("email"),
-      password: formData.get("password"),
+      password,
       role: formData.get("role"),
       addToAllProjects: formData.get("addToAllProjects"),
     });
@@ -810,6 +817,122 @@ export async function archiveProject(formData: FormData) {
 
   revalidatePath("/admin/projects");
   revalidatePath("/admin/projects/archived");
+}
+
+export async function toggleProjectWeeklyExport(formData: FormData) {
+  await requireRole(["ADMIN"]);
+
+  const projectId = String(formData.get("projectId"));
+  const enabled = formData.get("enabled") === "true";
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: {
+      weeklyExportEnabled: enabled,
+    },
+  });
+
+  revalidatePath("/admin/projects");
+  revalidatePath(`/admin/projects/${projectId}`);
+}
+
+export async function sendWeeklyProjectExports() {
+  const now = new Date();
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const projects = await prisma.project.findMany({
+    where: {
+      isArchived: false,
+      isActive: true,
+      weeklyExportEnabled: true,
+    },
+    include: {
+      emailRecipients: true,
+      feedbackSubmissions: {
+        where: {
+          submittedAt: {
+            gte: weekAgo,
+            lt: now,
+          },
+        },
+        orderBy: {
+          submittedAt: "asc",
+        },
+      },
+    },
+  });
+
+  const periodLabel = `${new Intl.DateTimeFormat("en-GB").format(weekAgo)} to ${new Intl.DateTimeFormat("en-GB").format(now)}`;
+
+  const results = [];
+
+  for (const project of projects) {
+    if (!project.feedbackSubmissions.length) {
+      results.push({
+        projectId: project.id,
+        projectName: project.name,
+        sent: false,
+        reason: "No feedback submitted in the past week.",
+      });
+      continue;
+    }
+
+    const recipients = Array.from(
+      new Map(project.emailRecipients.map((recipient) => [recipient.email.toLowerCase(), recipient])).values(),
+    ).map((recipient) => ({
+      email: recipient.email,
+      name: recipient.name,
+    }));
+
+    if (!recipients.length) {
+      results.push({
+        projectId: project.id,
+        projectName: project.name,
+        sent: false,
+        reason: "No recipients configured for project export emails.",
+      });
+      continue;
+    }
+
+    const csv = buildFeedbackExportCsv(
+      project.feedbackSubmissions.map((submission) => ({
+        ...submission,
+        project: {
+          name: project.name,
+          client: project.client,
+          slug: project.slug,
+        },
+      })),
+    );
+
+    try {
+      const result = await sendWeeklyFeedbackExportEmail({
+        projectName: project.name,
+        projectSlug: project.slug,
+        recipients,
+        csv,
+        periodLabel,
+      });
+
+      results.push({
+        projectId: project.id,
+        projectName: project.name,
+        ...result,
+      });
+    } catch (error) {
+      results.push({
+        projectId: project.id,
+        projectName: project.name,
+        sent: false,
+        reason: getValidationMessage(error, "Weekly feedback export failed."),
+      });
+    }
+  }
+
+  return {
+    processedAt: now.toISOString(),
+    results,
+  };
 }
 
 export async function restoreProject(formData: FormData) {

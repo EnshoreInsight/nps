@@ -14,6 +14,7 @@ type ProjectFormValues = {
   name?: string;
   slug?: string;
   client?: string;
+  weeklyExportEnabled?: boolean;
   description?: string | null;
   feedbackIntro?: string | null;
   thankYouMessage?: string | null;
@@ -69,6 +70,21 @@ export function ProjectForm({
           <div className="space-y-2">
             <label className="text-sm font-medium">Client name</label>
             <Input name="client" placeholder="Client name" required defaultValue={project?.client ?? ""} />
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center gap-3 text-sm font-medium">
+              <input
+                type="checkbox"
+                name="weeklyExportEnabled"
+                value="true"
+                defaultChecked={project?.weeklyExportEnabled ?? true}
+                className="h-4 w-4 rounded border border-input text-primary"
+              />
+              Weekly feedback export email enabled
+            </label>
+            <p className="text-sm text-muted-foreground">
+              Active projects send a weekly customer feedback export by email when this is turned on. Archived projects never send weekly exports.
+            </p>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Internal description</label>

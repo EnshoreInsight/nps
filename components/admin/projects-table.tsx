@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { archiveProject, restoreProject } from "@/app/actions";
+import { archiveProject, restoreProject, toggleProjectWeeklyExport } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,6 +14,7 @@ type ProjectRow = {
   client: string;
   slug: string;
   isActive: boolean;
+  weeklyExportEnabled: boolean;
   isArchived: boolean;
   archivedAt: string | null;
   assignments: Array<{
@@ -88,6 +89,7 @@ export function ProjectsTable({
               <TableHead>Client</TableHead>
               <TableHead>Public URL</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Weekly export</TableHead>
               <TableHead>Project team</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -135,6 +137,26 @@ export function ProjectsTable({
                 </TableCell>
                 <TableCell>{project.isActive ? "Active" : "Inactive"}</TableCell>
                 <TableCell>
+                  {project.isArchived ? (
+                    <span className="text-sm text-muted-foreground">Off for archived projects</span>
+                  ) : (
+                    <form
+                      action={toggleProjectWeeklyExport}
+                      className="flex flex-col items-start gap-2"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <input type="hidden" name="projectId" value={project.id} />
+                      <input type="hidden" name="enabled" value={String(!project.weeklyExportEnabled)} />
+                      <span className="text-sm font-medium">
+                        {project.weeklyExportEnabled ? "On" : "Off"}
+                      </span>
+                      <Button type="submit" variant="outline" size="sm">
+                        Turn {project.weeklyExportEnabled ? "off" : "on"}
+                      </Button>
+                    </form>
+                  )}
+                </TableCell>
+                <TableCell>
                   {project.assignments.length ? (
                     <div className="space-y-1">
                       {project.assignments.map((assignment) => (
@@ -163,7 +185,7 @@ export function ProjectsTable({
             ))}
             {!filteredProjects.length ? (
               <TableRow>
-                <TableCell colSpan={6}>No projects match your search.</TableCell>
+                <TableCell colSpan={7}>No projects match your search.</TableCell>
               </TableRow>
             ) : null}
           </TableBody>
