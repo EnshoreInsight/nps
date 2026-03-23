@@ -47,6 +47,41 @@ export function ActionDetail({ action, saved = false }: ActionDetailProps & { sa
   const now = new Date();
   const maxContactedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const updateRows = action.auditEntries.map((entry) => {
+    if (entry.field === "notification" && entry.toValue) {
+      try {
+        const payload = JSON.parse(entry.toValue) as {
+          status?: string;
+          reason?: string;
+          recipients?: number;
+        };
+
+        const description =
+          payload.status === "SENT"
+            ? `Notification email sent to ${payload.recipients ?? 0} recipient(s).`
+            : payload.status === "NOT_SENT"
+              ? `Notification email not sent: ${payload.reason ?? "No reason provided."}`
+              : `Notification email failed: ${payload.reason ?? "No reason provided."}`;
+
+        return {
+          id: entry.id,
+          date: new Date(entry.createdAt).toLocaleDateString(),
+          status: action.status,
+          contacted: action.contacted ? "Yes" : "No",
+          description,
+          updatedBy: entry.user.name,
+        };
+      } catch {
+        return {
+          id: entry.id,
+          date: new Date(entry.createdAt).toLocaleDateString(),
+          status: action.status,
+          contacted: action.contacted ? "Yes" : "No",
+          description: entry.toValue || "-",
+          updatedBy: entry.user.name,
+        };
+      }
+    }
+
     if (entry.field === "action_update" && entry.toValue) {
       try {
         const payload = JSON.parse(entry.toValue) as {

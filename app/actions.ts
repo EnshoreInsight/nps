@@ -35,6 +35,22 @@ function getValidationMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+async function getSystemAuditUserId() {
+  const systemUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ email: CORE_USER_EMAIL }, { role: Role.ADMIN }],
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return systemUser?.id ?? null;
+}
+
 async function grantUserAccessToAllProjects(userId: string, name: string, email: string) {
   const projects = await prisma.project.findMany({
     select: { id: true },
@@ -579,6 +595,21 @@ export async function submitFeedback(formData: FormData) {
         urgencyLevel,
         reason: notificationResult.reason,
       });
+
+      const auditUserId = await getSystemAuditUserId();
+      if (submission.action && auditUserId) {
+        await prisma.auditLog.create({
+          data: {
+            userId: auditUserId,
+            feedbackActionId: submission.action.id,
+            field: "notification",
+            toValue: JSON.stringify({
+              status: "NOT_SENT",
+              reason: notificationResult.reason,
+            }),
+          },
+        });
+      }
     } else {
       console.log("Feedback notification sent", {
         responseId: submission.id,
@@ -586,9 +617,42 @@ export async function submitFeedback(formData: FormData) {
         urgencyLevel,
         recipients: notificationResult.recipients,
       });
+
+      const auditUserId = await getSystemAuditUserId();
+      if (submission.action && auditUserId) {
+        await prisma.auditLog.create({
+          data: {
+            userId: auditUserId,
+            feedbackActionId: submission.action.id,
+            field: "notification",
+            toValue: JSON.stringify({
+              status: "SENT",
+              recipients: notificationResult.recipients,
+            }),
+          },
+        });
+      }
     }
   } catch (error) {
     console.error("Failed to send feedback notification", error);
+
+    const auditUserId = await getSystemAuditUserId();
+    if (submission.action && auditUserId) {
+      await prisma.auditLog.create({
+        data: {
+          userId: auditUserId,
+          feedbackActionId: submission.action.id,
+          field: "notification",
+          toValue: JSON.stringify({
+            status: "FAILED",
+            reason: getValidationMessage(
+              error,
+              "Notification delivery failed for an unknown reason.",
+            ),
+          }),
+        },
+      });
+    }
   }
 
   revalidatePath(`/f/${project.slug}`);
