@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useFormState, useFormStatus } from "react-dom";
 import { authenticate } from "@/app/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,12 +16,20 @@ export function SignInForm() {
       </div>
       <div className="space-y-2">
         <label className="text-sm font-medium">Password</label>
-        <Input name="password" type="password" placeholder="••••••••" required />
+        <Input name="password" type="password" placeholder="Password" required />
       </div>
       {state?.error ? <p className="text-sm text-destructive">{state.error}</p> : null}
-      <Button type="submit" className="w-full">
-        Sign in
-      </Button>
+      <SignInSubmitButton />
     </form>
+  );
+}
+
+function SignInSubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <Button type="submit" className="w-full" disabled={pending} aria-disabled={pending}>
+      {pending ? "Signing in..." : "Sign in"}
+    </Button>
   );
 }
