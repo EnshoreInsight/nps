@@ -8,9 +8,10 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
   const role = session?.user?.role;
 
   const navItems = [
-    ...(role ? NAV_ITEMS.shared : []),
+    ...(role ? NAV_ITEMS.shared.filter((item) => item.href !== "/account") : []),
     ...(role ? NAV_ITEMS.pm : []),
     ...(role === "ADMIN" ? NAV_ITEMS.admin : []),
+    ...(role ? NAV_ITEMS.shared.filter((item) => item.href === "/account") : []),
   ];
 
   return (
