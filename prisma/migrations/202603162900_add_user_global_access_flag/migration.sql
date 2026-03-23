@@ -1,0 +1,2 @@
+ALTER TABLE "User"
+ADD COLUMN "hasGlobalProjectAccess" BOOLEAN NOT NULL DEFAULT false;

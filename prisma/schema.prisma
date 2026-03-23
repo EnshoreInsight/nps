@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PROJECT_REPRESENTATIVE
+  VIEWER
+}
+
+enum AssignmentRole {
+  PM
+  CEO_VIEW
+  PROJECT_REP
+}
+
+enum ContactPreference {
+  YES
+  NO
+}
+
+enum UrgencyLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+  LEVEL_4
+}
+
+enum FeedbackActionStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+model User {
+  id             String              @id @default(cuid())
+  name           String
+  email          String              @unique
+  passwordHash   String
+  role           Role
+  hasGlobalProjectAccess Boolean     @default(false)
+  isArchived     Boolean             @default(false)
+  archivedAt     DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  assignments    ProjectAssignment[]
+  projectRecipients ProjectEmailRecipient[]
+  actionUpdates  FeedbackAction[]    @relation("ActionUpdatedBy")
+  auditEntries   AuditLog[]
+  accounts       Account[]
+  sessions       Session[]
+}
+
+model Project {
+  id                    String                  @id @default(cuid())
+  name                  String                  @unique
+  slug                  String                  @unique
+  client                String
+  isActive              Boolean                 @default(true)
+  isArchived            Boolean                 @default(false)
+  archivedAt            DateTime?
+  description           String?
+  feedbackIntro         String?
+  thankYouMessage       String?
+  packageOptions        Json?
+  categoryOptions       Json?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  assignments           ProjectAssignment[]
+  emailRecipients       ProjectEmailRecipient[]
+  feedbackSubmissions   FeedbackSubmission[]
+}
+
+model EmailSettings {
+  key               String   @id @default("global")
+  subjectTemplate   String?
+  bannerUrl         String?
+  trackerBannerUrl  String?
+  templateHtml      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ProjectAssignment {
+  id          String          @id @default(cuid())
+  userId      String
+  projectId   String
+  assignment  AssignmentRole
+  createdAt   DateTime        @default(now())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, projectId, assignment])
+}
+
+model ProjectEmailRecipient {
+  id          String    @id @default(cuid())
+  projectId   String
+  userId      String?
+  name        String
+  email       String
+  receivesL1  Boolean   @default(true)
+  receivesL2  Boolean   @default(true)
+  receivesL3  Boolean   @default(true)
+  receivesL4  Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model FeedbackSubmission {
+  id                  String             @id @default(cuid())
+  projectId           String
+  client              String
+  packageName         String
+  email               String
+  score               Int
+  comment             String
+  category            String
+  contactRequested    ContactPreference
+  urgencyLevel        UrgencyLevel
+  slaDueAt            DateTime?
+  submittedAt         DateTime           @default(now())
+  project             Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  action              FeedbackAction?
+}
+
+model FeedbackAction {
+  id                  String               @id @default(cuid())
+  feedbackSubmissionId String              @unique
+  status              FeedbackActionStatus @default(OPEN)
+  contacted           Boolean              @default(false)
+  firstResponseAt     DateTime?
+  contactedAt         DateTime?
+  closedAt            DateTime?
+  ownerNotes          String?
+  updatedById         String?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  feedbackSubmission  FeedbackSubmission   @relation(fields: [feedbackSubmissionId], references: [id], onDelete: Cascade)
+  updatedBy           User?                @relation("ActionUpdatedBy", fields: [updatedById], references: [id])
+  auditEntries        AuditLog[]
+}
+
+model AuditLog {
+  id              String    @id @default(cuid())
+  userId          String
+  feedbackActionId String
+  field           String
+  fromValue       String?
+  toValue         String?
+  createdAt       DateTime  @default(now())
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feedbackAction  FeedbackAction @relation(fields: [feedbackActionId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
