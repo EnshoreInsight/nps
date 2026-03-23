@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { submitFeedback } from "@/app/actions";
-import { Button } from "@/components/ui/button";
+import { FeedbackSubmitButton } from "@/components/forms/feedback-submit-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -190,9 +190,7 @@ export default async function PublicFeedbackPage({
                   By pressing submit on this form you are agreeing to the privacy statement from the original survey. Submitted
                   data is used for customer feedback purposes only, and anonymized aggregated satisfaction data may be shared publicly.
                 </p>
-                <Button type="submit" size="lg" className="rounded-full px-8">
-                  Submit feedback
-                </Button>
+                <FeedbackSubmitButton />
               </div>
             </form>
           )}
