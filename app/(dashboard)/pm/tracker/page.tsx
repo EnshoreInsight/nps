@@ -91,6 +91,7 @@ export default async function PmTrackerPage({
           score: action.feedbackSubmission.score,
           status: action.status,
           urgencyLevel: action.feedbackSubmission.urgencyLevel,
+          slaDueAt: action.feedbackSubmission.slaDueAt?.toISOString() ?? null,
           firstResponseAt: action.firstResponseAt?.toISOString() ?? null,
           isOverdueResponse:
             Boolean(action.feedbackSubmission.slaDueAt) &&

@@ -15,6 +15,7 @@ type ActionRow = {
   score: number;
   status: string;
   urgencyLevel: string;
+  slaDueAt: string | null;
   firstResponseAt: string | null;
   closedAt: string | null;
   submittedAt: string;
@@ -28,6 +29,7 @@ type SortKey =
   | "sentiment"
   | "urgencyLevel"
   | "status"
+  | "slaDueAt"
   | "firstResponseAt"
   | "closedAt";
 
@@ -43,6 +45,7 @@ type Filters = {
   sentiment: string;
   urgencyLevel: string;
   status: string;
+  slaDueAt: string;
   firstResponseAt: string;
   closedAt: string;
 };
@@ -72,6 +75,7 @@ export function ActionsTable({
     sentiment: "",
     urgencyLevel: "",
     status: "",
+    slaDueAt: "",
     firstResponseAt: "",
     closedAt: "",
   });
@@ -88,9 +92,10 @@ export function ActionsTable({
       sentiment: ["Promoter", "Passive", "Detractor"],
       urgencyLevel: [...new Set(actions.map((action) => urgencyLabel(action.urgencyLevel as never)))].sort((a, b) => a.localeCompare(b)),
       status: [...new Set(actions.map((action) => action.status))].sort((a, b) => a.localeCompare(b)),
+      slaDueAt: ["Overdue", "Due later", "No SLA set"],
       firstResponseAt: ["Pending", "Recorded"],
       closedAt: ["Open", "Closed"],
-      submittedAt: [...new Set(actions.map((action) => new Date(action.submittedAt).toLocaleDateString()))].sort((a, b) => a.localeCompare(b)),
+      submittedAt: [...new Set(actions.map((action) => new Date(action.submittedAt).toLocaleDateString("en-GB")))].sort((a, b) => a.localeCompare(b)),
     }),
     [actions],
   );
@@ -120,12 +125,18 @@ export function ActionsTable({
         }
 
         return (
-          (!filters.submittedAt || new Date(action.submittedAt).toLocaleDateString() === filters.submittedAt) &&
+          (!filters.submittedAt || new Date(action.submittedAt).toLocaleDateString("en-GB") === filters.submittedAt) &&
           (!filters.project || action.project === filters.project) &&
           (!filters.category || action.category === filters.category) &&
           (!filters.sentiment || sentimentLabel(action.score) === filters.sentiment) &&
           (!filters.urgencyLevel || urgencyLabel(action.urgencyLevel as never) === filters.urgencyLevel) &&
           (!filters.status || action.status === filters.status) &&
+          (!filters.slaDueAt ||
+            (filters.slaDueAt === "Overdue"
+              ? action.isOverdueResponse
+              : filters.slaDueAt === "Due later"
+                ? Boolean(action.slaDueAt) && !action.isOverdueResponse
+                : !action.slaDueAt)) &&
           (!filters.firstResponseAt ||
             (filters.firstResponseAt === "Recorded" ? Boolean(action.firstResponseAt) : !action.firstResponseAt)) &&
           (!filters.closedAt ||
@@ -146,6 +157,8 @@ export function ActionsTable({
             return compareStrings(urgencyLabel(a.urgencyLevel as never), urgencyLabel(b.urgencyLevel as never), sort.direction);
           case "status":
             return compareStrings(a.status, b.status, sort.direction);
+          case "slaDueAt":
+            return compareStrings(a.slaDueAt ?? "", b.slaDueAt ?? "", sort.direction);
           case "firstResponseAt":
             return compareStrings(a.firstResponseAt ?? "", b.firstResponseAt ?? "", sort.direction);
           case "closedAt":
@@ -224,6 +237,11 @@ export function ActionsTable({
               <TableHead>
                 <button type="button" className="font-medium" onClick={() => toggleSort("status")}>
                   Status {sortIndicator("status")}
+                </button>
+              </TableHead>
+              <TableHead>
+                <button type="button" className="font-medium" onClick={() => toggleSort("slaDueAt")}>
+                  SLA due {sortIndicator("slaDueAt")}
                 </button>
               </TableHead>
               <TableHead>
@@ -325,6 +343,20 @@ export function ActionsTable({
               <TableHead>
                 <select
                   className="h-9 w-full rounded-xl border border-input bg-white px-3 text-sm"
+                  value={filters.slaDueAt}
+                  onChange={(event) => setFilters((current) => ({ ...current, slaDueAt: event.target.value }))}
+                >
+                  <option value="">All</option>
+                  {filterOptions.slaDueAt.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </TableHead>
+              <TableHead>
+                <select
+                  className="h-9 w-full rounded-xl border border-input bg-white px-3 text-sm"
                   value={filters.firstResponseAt}
                   onChange={(event) => setFilters((current) => ({ ...current, firstResponseAt: event.target.value }))}
                 >
@@ -355,7 +387,7 @@ export function ActionsTable({
           <TableBody>
             {filteredActions.map((action) => (
               <TableRow key={action.id} className="cursor-pointer" onClick={() => router.push(`/pm/tracker/${action.id}`)}>
-                <TableCell>{new Date(action.submittedAt).toLocaleDateString()}</TableCell>
+                <TableCell>{new Date(action.submittedAt).toLocaleDateString("en-GB")}</TableCell>
                 <TableCell className="font-medium">{action.project}</TableCell>
                 <TableCell>{action.category}</TableCell>
                 <TableCell>
@@ -364,20 +396,30 @@ export function ActionsTable({
                 <TableCell>{urgencyLabel(action.urgencyLevel as never)}</TableCell>
                 <TableCell>{action.status}</TableCell>
                 <TableCell>
+                  {action.slaDueAt ? (
+                    <div className="flex flex-col gap-1">
+                      <span>{new Date(action.slaDueAt).toLocaleString("en-GB")}</span>
+                      {action.isOverdueResponse ? <Badge variant="danger">Overdue</Badge> : null}
+                    </div>
+                  ) : (
+                    "No SLA set"
+                  )}
+                </TableCell>
+                <TableCell>
                   {action.isOverdueResponse && !action.firstResponseAt ? (
                     <Badge variant="danger">Pending response overdue</Badge>
                   ) : action.firstResponseAt ? (
-                    new Date(action.firstResponseAt).toLocaleString()
+                    new Date(action.firstResponseAt).toLocaleString("en-GB")
                   ) : (
                     "Pending"
                   )}
                 </TableCell>
-                <TableCell>{action.closedAt ? new Date(action.closedAt).toLocaleString() : "Open"}</TableCell>
+                <TableCell>{action.closedAt ? new Date(action.closedAt).toLocaleString("en-GB") : "Open"}</TableCell>
               </TableRow>
             ))}
             {!filteredActions.length ? (
               <TableRow>
-                <TableCell colSpan={8}>No actions match your current filters.</TableCell>
+                <TableCell colSpan={9}>No actions match your current filters.</TableCell>
               </TableRow>
             ) : null}
           </TableBody>

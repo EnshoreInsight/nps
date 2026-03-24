@@ -24,6 +24,7 @@ type ActionDetailProps = {
       email: string;
       score: number;
       comment: string;
+      slaDueAt: Date | null;
       urgencyLevel: string;
       submittedAt: Date;
       project: {
@@ -47,6 +48,12 @@ export function ActionDetail({ action, saved = false, canEdit = true }: ActionDe
   const now = new Date();
   const maxContactedAt = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const formatUkDate = (value: Date | string) => new Date(value).toLocaleDateString("en-GB");
+  const formatUkDateTime = (value: Date | string) => new Date(value).toLocaleString("en-GB");
+  const isOverdueResponse =
+    Boolean(action.feedbackSubmission.slaDueAt) &&
+    action.feedbackSubmission.slaDueAt < now &&
+    !action.firstResponseAt &&
+    action.status !== "CLOSED";
   const updateRows = action.auditEntries.map((entry) => {
     if (entry.field === "notification" && entry.toValue) {
       try {
@@ -141,7 +148,7 @@ export function ActionDetail({ action, saved = false, canEdit = true }: ActionDe
               <CardTitle>{action.feedbackSubmission.project.name}</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
                 {action.feedbackSubmission.client} • {action.feedbackSubmission.packageName} • Submitted{" "}
-                {new Date(action.feedbackSubmission.submittedAt).toLocaleString()}
+                {formatUkDateTime(action.feedbackSubmission.submittedAt)}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -168,22 +175,31 @@ export function ActionDetail({ action, saved = false, canEdit = true }: ActionDe
               Action update saved.
             </div>
           ) : null}
-          <div className="grid gap-4 rounded-[1.5rem] bg-secondary p-5 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 rounded-[1.5rem] bg-secondary p-5 md:grid-cols-2 xl:grid-cols-5">
             <div>
               <p className="text-sm text-muted-foreground">Score</p>
               <p className="mt-1 text-2xl font-semibold">{action.feedbackSubmission.score}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">First response date</p>
-              <p className="mt-1 font-medium">{action.firstResponseAt ? new Date(action.firstResponseAt).toLocaleDateString() : "Not yet recorded"}</p>
+              <p className="mt-1 font-medium">{action.firstResponseAt ? formatUkDate(action.firstResponseAt) : "Not yet recorded"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">SLA due date</p>
+              <div className="mt-1 space-y-2">
+                <p className="font-medium">
+                  {action.feedbackSubmission.slaDueAt ? formatUkDateTime(action.feedbackSubmission.slaDueAt) : "No SLA set"}
+                </p>
+                {isOverdueResponse ? <Badge variant="danger">Response overdue</Badge> : null}
+              </div>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Latest response date</p>
-              <p className="mt-1 font-medium">{action.contactedAt ? new Date(action.contactedAt).toLocaleDateString() : "Not yet recorded"}</p>
+              <p className="mt-1 font-medium">{action.contactedAt ? formatUkDate(action.contactedAt) : "Not yet recorded"}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Close date</p>
-              <p className="mt-1 font-medium">{action.closedAt ? new Date(action.closedAt).toLocaleDateString() : "Still open"}</p>
+              <p className="mt-1 font-medium">{action.closedAt ? formatUkDate(action.closedAt) : "Still open"}</p>
             </div>
           </div>
 
