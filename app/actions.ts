@@ -625,7 +625,7 @@ export async function submitFeedback(formData: FormData) {
   });
 
   const trackerLink = submission.action
-    ? `${process.env.APP_BASE_URL}/pm/tracker?action=${submission.action.id}#action-${submission.action.id}`
+    ? `${process.env.APP_BASE_URL}/pm/tracker/${submission.action.id}`
     : `${process.env.APP_BASE_URL}/pm/tracker`;
 
   try {
@@ -877,22 +877,12 @@ export async function sendWeeklyProjectExports() {
       continue;
     }
 
-    const recipients = Array.from(
-      new Map(project.emailRecipients.map((recipient) => [recipient.email.toLowerCase(), recipient])).values(),
-    ).map((recipient) => ({
-      email: recipient.email,
-      name: recipient.name,
-    }));
-
-    if (!recipients.length) {
-      results.push({
-        projectId: project.id,
-        projectName: project.name,
-        sent: false,
-        reason: "No recipients configured for project export emails.",
-      });
-      continue;
-    }
+    const recipients = [
+      {
+        email: CORE_USER_EMAIL,
+        name: CORE_USER_NAME,
+      },
+    ];
 
     const csv = buildFeedbackExportCsv(
       project.feedbackSubmissions.map((submission) => ({
