@@ -80,6 +80,20 @@ export default async function DashboardPage({
     const archiveYear = project.archivedAt ? String(project.archivedAt.getFullYear()) : "Archived";
     return data.selectedArchivedYears.includes(archiveYear);
   }).length;
+  const overdueTrackerHref = (() => {
+    const params = new URLSearchParams();
+    params.set("overdue", "1");
+
+    if (data.selectedProjectIds.length > 0 && data.selectedProjectIds.length !== visibleProjectCount) {
+      params.set("projects", data.selectedProjectIds.join(","));
+    }
+
+    if (data.selectedArchivedYears.length) {
+      params.set("archivedYears", data.selectedArchivedYears.join(","));
+    }
+
+    return `/pm/tracker?${params.toString()}`;
+  })();
 
   return (
     <div className="space-y-8">
@@ -126,7 +140,7 @@ export default async function DashboardPage({
         <KpiTile href="/pm/forms" label="Responses received" value={data.kpis.responsesReceived} />
         <KpiTile href="/dashboard#sentiment-mix" label="NPS" value={data.kpis.nps} className={npsCardTone(data.kpis.npsTone)} />
         <KpiTile href="/pm/tracker" label="Open actions" value={data.kpis.openActions} />
-        <KpiTile href="/pm/tracker?overdue=1" label="Overdue SLA" value={data.kpis.overdueSla} className={overdueTone(data.kpis.overdueSla)} />
+        <KpiTile href={overdueTrackerHref} label="Responses overdue" value={data.kpis.overdueSla} className={overdueTone(data.kpis.overdueSla)} />
         <KpiTile href="/pm/forms?actionRequired=1" label="Contact requested" value={data.kpis.contactRequested} />
         <KpiTile href="/pm/forms" label="Average score" value={data.kpis.averageScore} className={averageScoreTone(data.kpis.averageScore)} />
       </div>

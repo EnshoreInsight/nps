@@ -1,21 +1,44 @@
 import { ActionsTable } from "@/components/tracker/actions-table";
+import { DashboardProjectFilter } from "@/components/dashboard/project-filter";
 import { PageHeader } from "@/components/shared/page-header";
 import { requireRole } from "@/lib/authz";
+import { getAccessibleProjects, resolveSelectedProjectIds } from "@/lib/data/dashboard";
 import { prisma } from "@/lib/prisma";
 
 export default async function PmTrackerPage({
   searchParams,
 }: {
-  searchParams?: { q?: string; includeClosed?: string; overdue?: string };
+  searchParams?: { q?: string; includeClosed?: string; overdue?: string; projects?: string; archivedYears?: string };
 }) {
   const session = await requireRole(["ADMIN", "PROJECT_REPRESENTATIVE", "VIEWER"]);
+  const requestedProjectIds = searchParams?.projects
+    ? searchParams.projects.split(",").map((value) => value.trim()).filter(Boolean)
+    : [];
+  const archivedYears = searchParams?.archivedYears
+    ? searchParams.archivedYears.split(",").map((value) => value.trim()).filter(Boolean)
+    : [];
+  const { availableProjects, archivedProjectGroups } = await getAccessibleProjects(session.user.id, session.user.role);
+  const { selectedProjectIds, selectedArchivedYears } = resolveSelectedProjectIds({
+    availableProjects,
+    requestedProjectIds,
+    archivedYears,
+  });
 
   const actions = await prisma.feedbackAction.findMany({
     where:
       session.user.role === "ADMIN"
-        ? {}
+        ? {
+            feedbackSubmission: {
+              projectId: {
+                in: selectedProjectIds,
+              },
+            },
+          }
         : {
             feedbackSubmission: {
+              projectId: {
+                in: selectedProjectIds,
+              },
               project: {
                 OR: [
                   {
@@ -45,6 +68,16 @@ export default async function PmTrackerPage({
       <PageHeader
         title="Action Tracker"
         description="Review customer actions in one searchable table, then open any row to update progress and view its full log history."
+        actions={
+          <DashboardProjectFilter
+            userId={session.user.id}
+            projects={availableProjects}
+            selectedProjectIds={selectedProjectIds}
+            selectedArchivedYears={selectedArchivedYears}
+            archivedProjectGroups={archivedProjectGroups}
+            storageNamespace="tracker"
+          />
+        }
       />
       <ActionsTable
         initialQuery={searchParams?.q ?? ""}
@@ -59,6 +92,11 @@ export default async function PmTrackerPage({
           status: action.status,
           urgencyLevel: action.feedbackSubmission.urgencyLevel,
           firstResponseAt: action.firstResponseAt?.toISOString() ?? null,
+          isOverdueResponse:
+            Boolean(action.feedbackSubmission.slaDueAt) &&
+            action.feedbackSubmission.slaDueAt! < new Date() &&
+            !action.firstResponseAt &&
+            action.status !== "CLOSED",
           closedAt:
             action.closedAt?.toISOString() ??
             (action.status === "CLOSED"

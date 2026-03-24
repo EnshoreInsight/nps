@@ -18,6 +18,7 @@ type ActionRow = {
   firstResponseAt: string | null;
   closedAt: string | null;
   submittedAt: string;
+  isOverdueResponse: boolean;
 };
 
 type SortKey =
@@ -367,7 +368,15 @@ export function ActionsTable({
                 </TableCell>
                 <TableCell>{urgencyLabel(action.urgencyLevel as never)}</TableCell>
                 <TableCell>{action.status}</TableCell>
-                <TableCell>{action.firstResponseAt ? new Date(action.firstResponseAt).toLocaleString() : "Pending"}</TableCell>
+                <TableCell>
+                  {action.isOverdueResponse && !action.firstResponseAt ? (
+                    <Badge variant="danger">Overdue</Badge>
+                  ) : action.firstResponseAt ? (
+                    new Date(action.firstResponseAt).toLocaleString()
+                  ) : (
+                    "Pending"
+                  )}
+                </TableCell>
                 <TableCell>{action.closedAt ? new Date(action.closedAt).toLocaleString() : "Open"}</TableCell>
               </TableRow>
             ))}
