@@ -5,6 +5,7 @@ import { PackagePerformanceChart } from "@/components/charts/package-performance
 import { PmTrendChart } from "@/components/charts/pm-trend-chart";
 import { SentimentBreakdownChart } from "@/components/charts/sentiment-breakdown-chart";
 import { DashboardProjectFilter } from "@/components/dashboard/project-filter";
+import { RecentCommentsCard } from "@/components/dashboard/recent-comments-card";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -100,7 +101,12 @@ export default async function DashboardPage({
 
       <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
         <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-          Viewing {data.selectedProjectIds.length === visibleProjectCount ? "All projects" : `${data.selectedProjectIds.length} selected`}
+          Viewing{" "}
+          {data.selectedProjectIds.length === visibleProjectCount
+            ? "All projects"
+            : data.selectedProjectIds.length === 0
+              ? "No projects selected"
+              : `${data.selectedProjectIds.length} selected`}
         </span>
         <span className="rounded-full bg-white px-4 py-2 shadow-sm">
           {data.selectedArchivedYears.length ? `Archived years: ${data.selectedArchivedYears.join(", ")}` : "Active projects only"}
@@ -108,6 +114,8 @@ export default async function DashboardPage({
         <span className="rounded-full bg-white px-4 py-2 shadow-sm">
           {data.availableMonths.length === 0 || data.selectedMonths.length === data.availableMonths.length
             ? "All months"
+            : data.selectedMonths.length === 0
+              ? "No months selected"
             : data.selectedMonths
                 .map((month) => data.availableMonths.find((item) => item.value === month)?.label ?? month)
                 .join(", ")}
@@ -122,6 +130,8 @@ export default async function DashboardPage({
         <KpiTile href="/pm/forms?actionRequired=1" label="Contact requested" value={data.kpis.contactRequested} />
         <KpiTile href="/pm/forms" label="Average score" value={data.kpis.averageScore} className={averageScoreTone(data.kpis.averageScore)} />
       </div>
+
+      <RecentCommentsCard comments={data.recentComments} />
 
       <div className="grid gap-8 xl:grid-cols-[0.9fr_1.1fr]">
         <Card id="sentiment-mix">

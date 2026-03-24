@@ -109,6 +109,13 @@ export function resolveSelectedProjectIds({
     })
     .map((project) => project.id);
 
+  if (requestedProjectIds.includes("__none__")) {
+    return {
+      selectedProjectIds: [],
+      selectedArchivedYears: archivedYears,
+    };
+  }
+
   const validRequestedProjectIds = requestedProjectIds.filter((projectId) =>
     filteredProjectIds.includes(projectId),
   );
@@ -275,7 +282,9 @@ export async function getDashboardData({
   const validRequestedMonths = requestedMonths.filter((month) =>
     availableMonths.some((availableMonth) => availableMonth.value === month),
   );
-  const selectedMonths = validRequestedMonths.length
+  const selectedMonths = requestedMonths.includes("__none__")
+    ? []
+    : validRequestedMonths.length
     ? validRequestedMonths
     : availableMonths.map((month) => month.value);
 
@@ -522,6 +531,16 @@ export async function getDashboardData({
     ],
     categoryData,
     packagePerformance,
+    recentComments: filteredSubmissions
+      .filter((submission) => submission.comment.trim().length > 0)
+      .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime())
+      .map((submission) => ({
+        id: submission.id,
+        who: submission.client,
+        comment: submission.comment,
+        submittedAt: submission.submittedAt.toISOString(),
+        project: submission.project.name,
+      })),
     commentCloud: buildCommentCloud(
       filteredSubmissions
         .map((submission) => submission.comment)

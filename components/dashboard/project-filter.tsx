@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
@@ -55,6 +55,7 @@ export function DashboardProjectFilter({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const activeProjects = useMemo(() => projects.filter((project) => !project.isArchived), [projects]);
   const visibleProjects = useMemo(
@@ -67,14 +68,25 @@ export function DashboardProjectFilter({
     [activeProjects, archivedProjectGroups, selectedArchivedYears],
   );
   const visibleProjectIds = visibleProjects.map((project) => project.id);
-  const isAllSelected =
-    !visibleProjectIds.length ||
-    selectedProjectIds.length === 0 ||
-    selectedProjectIds.length === visibleProjectIds.length;
+  const isAllSelected = visibleProjectIds.length > 0 && selectedProjectIds.length === visibleProjectIds.length;
   const isAllMonthsSelected =
-    !availableMonths.length ||
-    selectedMonths.length === 0 ||
-    selectedMonths.length === availableMonths.length;
+    availableMonths.length > 0 && selectedMonths.length === availableMonths.length;
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handlePointerDown);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     const storageKey = buildStorageKey(storageNamespace, userId);
@@ -146,7 +158,10 @@ export function DashboardProjectFilter({
         .flatMap((group) => group.projects.map((project) => project.id)),
     ];
 
-    if (!nextSelectedIds.length || nextSelectedIds.length === nextVisibleProjectIds.length) {
+    if (!nextSelectedIds.length) {
+      params.set("projects", "__none__");
+      localStorage.setItem(storageKey, "__none__");
+    } else if (nextSelectedIds.length === nextVisibleProjectIds.length) {
       params.delete("projects");
       localStorage.setItem(storageKey, "__all__");
     } else {
@@ -164,7 +179,10 @@ export function DashboardProjectFilter({
       localStorage.removeItem(archiveStorageKey);
     }
 
-    if (!nextSelectedMonths.length || nextSelectedMonths.length === availableMonths.length) {
+    if (!nextSelectedMonths.length && availableMonths.length) {
+      params.set("months", "__none__");
+      localStorage.setItem(monthStorageKey, "__none__");
+    } else if (!availableMonths.length || nextSelectedMonths.length === availableMonths.length) {
       params.delete("months");
       localStorage.setItem(monthStorageKey, "__all__");
     } else {
@@ -219,12 +237,14 @@ export function DashboardProjectFilter({
 
   const triggerLabel = isAllSelected
     ? "All projects"
+    : selectedProjectIds.length === 0
+      ? "No projects selected"
     : selectedProjectIds.length === 1
       ? projects.find((project) => project.id === selectedProjectIds[0])?.name ?? "1 project"
       : `${selectedProjectIds.length} projects selected`;
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <Button type="button" variant="outline" className="min-w-72 justify-between" onClick={() => setIsOpen((value) => !value)}>
         <span>{triggerLabel}</span>
         <span className="text-xs text-muted-foreground">{isOpen ? "Close" : "Filter"}</span>
@@ -236,7 +256,7 @@ export function DashboardProjectFilter({
               <input
                 type="checkbox"
                 checked={isAllSelected}
-                onChange={() => persistSelection(visibleProjectIds)}
+                onChange={() => persistSelection(isAllSelected ? [] : visibleProjectIds)}
                 className="h-4 w-4"
               />
               All
@@ -247,7 +267,7 @@ export function DashboardProjectFilter({
                 <label key={project.id} className="flex items-center gap-3 text-sm">
                   <input
                     type="checkbox"
-                    checked={isAllSelected || selectedProjectIds.includes(project.id)}
+                    checked={selectedProjectIds.includes(project.id)}
                     onChange={() => toggleProject(project.id)}
                     className="h-4 w-4"
                   />
@@ -275,7 +295,7 @@ export function DashboardProjectFilter({
                           <label key={project.id} className="flex items-center gap-3 text-sm text-slate-600">
                             <input
                               type="checkbox"
-                              checked={isAllSelected || selectedProjectIds.includes(project.id)}
+                              checked={selectedProjectIds.includes(project.id)}
                               onChange={() => toggleProject(project.id)}
                               className="h-4 w-4"
                             />
@@ -295,7 +315,13 @@ export function DashboardProjectFilter({
                   <input
                     type="checkbox"
                     checked={isAllMonthsSelected}
-                    onChange={() => persistSelection(selectedProjectIds, selectedArchivedYears, availableMonths.map((month) => month.value))}
+                    onChange={() =>
+                      persistSelection(
+                        selectedProjectIds,
+                        selectedArchivedYears,
+                        isAllMonthsSelected ? [] : availableMonths.map((month) => month.value),
+                      )
+                    }
                     className="h-4 w-4"
                   />
                   All months
@@ -305,7 +331,7 @@ export function DashboardProjectFilter({
                     <label key={month.value} className="flex items-center gap-3 text-sm">
                       <input
                         type="checkbox"
-                        checked={isAllMonthsSelected || selectedMonths.includes(month.value)}
+                        checked={selectedMonths.includes(month.value)}
                         onChange={() => toggleMonth(month.value)}
                         className="h-4 w-4"
                       />
