@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 export async function requireSession() {
   const session = await auth();
   if (!session?.user) {
-    redirect("/sign-in");
+    redirect("/");
   }
   return session;
 }
