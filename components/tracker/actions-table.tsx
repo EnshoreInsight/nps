@@ -99,12 +99,7 @@ export function ActionsTable({
     const normalized = query.trim().toLowerCase();
     const visibleActions = includeClosed ? actions : actions.filter((action) => action.status !== "CLOSED");
     const overdueActions = overdueOnly
-      ? visibleActions.filter(
-          (action) =>
-            (action.urgencyLevel === "LEVEL_1" || action.urgencyLevel === "LEVEL_3") &&
-            !action.firstResponseAt &&
-            action.status !== "CLOSED",
-        )
+      ? visibleActions.filter((action) => action.isOverdueResponse)
       : visibleActions;
 
     return overdueActions
@@ -370,7 +365,7 @@ export function ActionsTable({
                 <TableCell>{action.status}</TableCell>
                 <TableCell>
                   {action.isOverdueResponse && !action.firstResponseAt ? (
-                    <Badge variant="danger">Overdue</Badge>
+                    <Badge variant="danger">Pending response overdue</Badge>
                   ) : action.firstResponseAt ? (
                     new Date(action.firstResponseAt).toLocaleString()
                   ) : (
