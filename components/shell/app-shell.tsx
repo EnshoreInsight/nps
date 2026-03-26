@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { APP_NAME, NAV_ITEMS } from "@/lib/constants";
+import { SideNav } from "@/components/shell/side-nav";
 import { SignOutButton } from "@/components/shell/sign-out-button";
 
 export async function AppShell({ children }: { children: React.ReactNode }) {
@@ -33,15 +34,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
       </header>
       <div className="mx-auto grid max-w-7xl gap-8 px-6 py-8 lg:grid-cols-[240px_1fr]">
         <aside className="space-y-2 rounded-[1.75rem] border border-border/80 bg-white p-4 shadow-[0_20px_40px_rgba(36,88,104,0.12)]">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="block rounded-2xl px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-            >
-              {item.label}
-            </Link>
-          ))}
+          <SideNav items={navItems} />
         </aside>
         <main className="rounded-[2rem] border border-white bg-white p-6 shadow-[0_24px_60px_rgba(10,53,70,0.14)]">
           {children}
