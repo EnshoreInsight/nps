@@ -7,3 +7,8 @@ By pressing submit on this form you are agreeing to the following privacy statem
 Thank you!`;
 
 export const DEFAULT_FORM_OUTRO = "Thank You";
+
+export const DEFAULT_CATEGORY_OPTIONS = `Safety
+Quality
+Delivery
+Service`;

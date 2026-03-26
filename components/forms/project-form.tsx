@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { DEFAULT_FORM_INTRO, DEFAULT_FORM_OUTRO } from "@/lib/project-defaults";
+import { DEFAULT_CATEGORY_OPTIONS, DEFAULT_FORM_INTRO, DEFAULT_FORM_OUTRO } from "@/lib/project-defaults";
 import { stringifyOptions } from "@/lib/project-options";
 
 type ProjectFormValues = {
@@ -119,7 +119,7 @@ export function ProjectForm({
             <Textarea
               name="categoryOptions"
               placeholder="One option per line"
-              defaultValue={stringifyOptions(project?.categoryOptions)}
+              defaultValue={stringifyOptions(project?.categoryOptions) || DEFAULT_CATEGORY_OPTIONS}
             />
           </div>
           <ProjectSubmitButton isEdit={isEdit} />
