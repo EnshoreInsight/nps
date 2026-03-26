@@ -1,4 +1,7 @@
+"use client";
+
 import { createRecipient, removeRecipient, updateRecipient } from "@/app/actions";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,6 +16,71 @@ type ProjectRecipient = {
   receivesL3: boolean;
   receivesL4: boolean;
 };
+
+function RecipientLevelsForm({
+  recipient,
+  projectId,
+}: {
+  recipient: ProjectRecipient;
+  projectId: string;
+}) {
+  const [pending, setPending] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  async function handleSave(formData: FormData) {
+    setPending(true);
+    setSaved(false);
+
+    try {
+      await updateRecipient(formData);
+      setSaved(true);
+
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+
+      timeoutRef.current = setTimeout(() => {
+        setSaved(false);
+      }, 5000);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <form id={`recipient-levels-${recipient.id}`} action={handleSave}>
+        <input type="hidden" name="recipientId" value={recipient.id} />
+        <input type="hidden" name="projectId" value={projectId} />
+        <div className="grid gap-y-3 sm:grid-cols-2 sm:gap-x-6">
+          {([
+            ["receivesL1", "Level 1", recipient.receivesL1],
+            ["receivesL2", "Level 2", recipient.receivesL2],
+            ["receivesL3", "Level 3", recipient.receivesL3],
+            ["receivesL4", "Level 4", recipient.receivesL4],
+          ] as const).map(([field, label, checked]) => (
+            <label key={field} className="flex items-center gap-2 text-sm">
+              <input type="checkbox" name={field} defaultChecked={Boolean(checked)} />
+              {label}
+            </label>
+          ))}
+        </div>
+      </form>
+      <Button type="submit" variant="outline" className="w-32" form={`recipient-levels-${recipient.id}`} disabled={pending}>
+        {pending ? "Saving..." : saved ? "Saved" : "Save levels"}
+      </Button>
+    </div>
+  );
+}
 
 export function ProjectRecipientsSection({
   projectId,
@@ -62,29 +130,10 @@ export function ProjectRecipientsSection({
                     <TableCell className="align-top font-medium">{recipient.name}</TableCell>
                     <TableCell className="align-top">{recipient.email}</TableCell>
                     <TableCell className="align-top">
-                      <form id={`recipient-levels-${recipient.id}`} action={updateRecipient}>
-                        <input type="hidden" name="recipientId" value={recipient.id} />
-                        <input type="hidden" name="projectId" value={projectId} />
-                        <div className="grid gap-y-3 sm:grid-cols-2 sm:gap-x-6">
-                          {([
-                            ["receivesL1", "Level 1", recipient.receivesL1],
-                            ["receivesL2", "Level 2", recipient.receivesL2],
-                            ["receivesL3", "Level 3", recipient.receivesL3],
-                            ["receivesL4", "Level 4", recipient.receivesL4],
-                          ] as const).map(([field, label, checked]) => (
-                            <label key={field} className="flex items-center gap-2 text-sm">
-                              <input type="checkbox" name={field} defaultChecked={Boolean(checked)} />
-                              {label}
-                            </label>
-                          ))}
-                        </div>
-                      </form>
+                      <RecipientLevelsForm recipient={recipient} projectId={projectId} />
                     </TableCell>
                     <TableCell className="align-top">
                       <div className="flex flex-col gap-3">
-                        <Button type="submit" variant="outline" className="w-32" form={`recipient-levels-${recipient.id}`}>
-                          Save levels
-                        </Button>
                         <form action={removeRecipient}>
                           <input type="hidden" name="recipientId" value={recipient.id} />
                           <input type="hidden" name="projectId" value={projectId} />
