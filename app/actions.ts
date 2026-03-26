@@ -243,6 +243,8 @@ export async function updateProject(_: FormActionState | undefined, formData: Fo
 export async function createUser(_: FormActionState | undefined, formData: FormData) {
   await requireRole(["ADMIN"]);
 
+  let created = false;
+
   try {
     const password = String(formData.get("password") || DEFAULT_NEW_USER_PASSWORD);
     const parsed = userSchema.safeParse({
@@ -286,9 +288,7 @@ export async function createUser(_: FormActionState | undefined, formData: FormD
       await grantUserAccessToAllProjects(user.id, user.name, user.email);
     }
 
-    revalidatePath("/admin/users");
-    revalidatePath("/admin/users/new");
-    return {};
+    created = true;
   } catch (error) {
     return {
       error: getValidationMessage(
@@ -296,6 +296,12 @@ export async function createUser(_: FormActionState | undefined, formData: FormD
         "We could not create the user. Please review the form and try again.",
       ),
     };
+  }
+
+  if (created) {
+    revalidatePath("/admin/users");
+    revalidatePath("/admin/users/new");
+    redirect("/admin/users");
   }
 }
 
