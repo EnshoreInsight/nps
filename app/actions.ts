@@ -145,23 +145,23 @@ export async function createProject(_: FormActionState | undefined, formData: Fo
       };
     }
 
-    await prisma.project.create({
-      data: {
-        ...parsed.data,
-        weeklyExportEnabled: parsed.data.weeklyExportEnabled,
-        packageOptions: parseOptionText(parsed.data.packageOptions),
+      await prisma.project.create({
+        data: {
+          ...parsed.data,
+          weeklyExportEnabled: parsed.data.weeklyExportEnabled,
+          packageOptions: parseOptionText(parsed.data.packageOptions),
         categoryOptions: parseOptionText(parsed.data.categoryOptions),
       },
     });
 
-    revalidatePath("/admin/projects");
-    revalidatePath("/admin/projects/new");
-    revalidatePath("/admin/projects/archived");
-    return {};
-  } catch (error) {
-    return {
-      error: getValidationMessage(
-        error,
+      revalidatePath("/admin/projects");
+      revalidatePath("/admin/projects/new");
+      revalidatePath("/admin/projects/archived");
+      redirect("/admin/projects");
+    } catch (error) {
+      return {
+        error: getValidationMessage(
+          error,
         "We could not create the project. Please review the form and try again.",
       ),
     };
