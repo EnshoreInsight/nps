@@ -815,6 +815,39 @@ export async function updateAction(formData: FormData) {
   redirect(`${returnPath}?saved=1`);
 }
 
+export async function deleteSubmission(formData: FormData) {
+  await requireRole(["ADMIN"]);
+
+  const submissionId = String(formData.get("submissionId"));
+
+  const submission = await prisma.feedbackSubmission.findUnique({
+    where: { id: submissionId },
+    include: {
+      project: true,
+      action: true,
+    },
+  });
+
+  if (!submission) {
+    throw new Error("Submission not found.");
+  }
+
+  await prisma.feedbackSubmission.delete({
+    where: { id: submissionId },
+  });
+
+  revalidatePath("/pm/forms");
+  revalidatePath(`/pm/forms/${submissionId}`);
+  revalidatePath("/pm/tracker");
+  if (submission.action) {
+    revalidatePath(`/pm/tracker/${submission.action.id}`);
+  }
+  revalidatePath("/dashboard");
+  revalidatePath("/pm/dashboard");
+  revalidatePath("/ceo/dashboard");
+  redirect("/pm/forms");
+}
+
 export async function archiveProject(formData: FormData) {
   await requireRole(["ADMIN"]);
 

@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { deleteSubmission } from "@/app/actions";
+import { DeleteSubmissionButton } from "@/components/forms/delete-submission-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +33,7 @@ export default async function PmFormDetailPage({
 
   const actionRequired = submission.contactRequested === "YES";
   const actionOpen = actionRequired ? submission.action?.status !== "CLOSED" : false;
+  const canDelete = session.user.role === "ADMIN";
 
   return (
     <div className="space-y-8">
@@ -43,6 +46,12 @@ export default async function PmFormDetailPage({
               <Button asChild>
                 <Link href={`/pm/tracker/${submission.action.id}`}>Open linked action</Link>
               </Button>
+            ) : null}
+            {canDelete ? (
+              <form action={deleteSubmission}>
+                <input type="hidden" name="submissionId" value={submission.id} />
+                <DeleteSubmissionButton />
+              </form>
             ) : null}
             <Button asChild variant="outline">
               <Link href="/pm/forms">Back to forms</Link>
